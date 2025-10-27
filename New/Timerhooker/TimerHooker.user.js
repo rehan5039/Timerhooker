@@ -1,7 +1,10 @@
 // ==UserScript==
 // @name            TimerHooker 2026
-// @version         1.4.1
-// @description     Control page timer speed | Speed up or slow down page timers, skip ads, and adjust video playback.
+// @name:en         TimerHooker 2026
+// @version         1.4.2
+// @description     Control page timer speed | Speed up to skip page timing ads | Video fast forward (slow play) | Skip ads | Support almost all web pages.
+// @description:en  it can hook the timer speed to change.
+// @require         https://greasyfork.org/scripts/372672-everything-hook/code/Everything-Hook.js?download
 // @author          rehan
 // @match           *://*/*
 // @match           file:///*
@@ -9,13 +12,13 @@
 // @grant           none
 // @inject-into     page
 // @license         GPL-3.0-or-later
-// @namespace       https://rehan5039.github.io/
-// @downloadURL     https://update.greasyfork.org/scripts/553657/TimerHooker%202026.user.js
-// @updateURL       https://update.greasyfork.org/scripts/553657/TimerHooker%202026.user.js
+// @namespace https://
+// @downloadURL https://update.greasyfork.org/scripts/553657/TimerHooker%202026.user.js
+// @updateURL https://update.greasyfork.org/scripts/553657/TimerHooker%202026.user.js
 // ==/UserScript==
 /**
  * ---------------------------
- * Time: 2025/10/25 17:36.
+ * Time: 2025/10/27 15:00.
  * Author: rehan
  * View: http://
  * ---------------------------
