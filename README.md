@@ -4,6 +4,7 @@
    Control page timer speed. Speed up to skip page timing ads. Video fast forward/slow play. Skip ads. Supports almost all web pages.
 
  - **Install**
+   - GreasyFork Script install page: https://greasyfork.org/en/scripts/553657-timerhooker-2026
    - GreasyFork auto-update URL: https://update.greasyfork.org/scripts/553657/TimerHooker%202026.user.js
    - Install via Tampermonkey/Greasemonkey by visiting the URL above.
 
