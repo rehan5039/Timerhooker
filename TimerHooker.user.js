@@ -4,7 +4,7 @@
 // @version         1.4.2
 // @description     Control page timer speed | Speed up to skip page timing ads | Video fast forward (slow play) | Skip ads | Support almost all web pages.
 // @description:en  it can hook the timer speed to change.
-// @require         https://greasyfork.org/scripts/372672-everything-hook/code/Everything-Hook.js?download
+// @require         https://raw.githubusercontent.com/rehan5039/Timerhooker/refs/heads/main/Everything-Hook.js?download
 // @author          rehan
 // @match           *://*/*
 // @match           file:///*
