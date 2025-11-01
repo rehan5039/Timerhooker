@@ -61,13 +61,28 @@ if (document.readyState === "interactive" || document.readyState === "complete")
             sendToIframes: true,
             pinned: true,
             excluded: false,
-            hotkeys: {
+            autoSave: true,
+            showNotifications: true,
+            compactMode: false,
+            presets: [
+                { name: '0.25×', value: 4 },
+                { name: '0.5×', value: 2 },
+                { name: '2×', value: 0.5 },
+                { name: '4×', value: 0.25 },
+                { name: '8×', value: 0.125 }
+            ],
+            history: [],
+            maxHistory: 10,
+            lastSpeed: 1,
+            toggleEnabled: true,
+                hotkeys: {
                 increase: 'Alt+Shift+ArrowUp',
                 decrease: 'Alt+Shift+ArrowDown',
                 multiply: 'Ctrl+Alt+=',
                 divide: 'Ctrl+Alt+-',
                 reset: 'Ctrl+Alt+0',
-                prompt: 'Ctrl+Alt+9'
+                prompt: 'Ctrl+Alt+9',
+                toggle: 'Ctrl+Alt+T'
             }
         };
         ns.loadSettings = function(){
@@ -102,37 +117,100 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                 var settings = (ns.loadSettings && ns.loadSettings()) || (ns.defaults || {});
                 var rateStr = (1 / timerContext._percentage).toFixed(2);
 
-                // Build style with theme awareness and accessibility (glassmorphism)
+                // Ultra-modern glassmorphic design - 2025 professional UI
                 var css = '' +
-                '.th15-root{position:fixed;top:20%;left:12px;z-index:2147483647;font:13px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none;transition:transform .2s ease}' +
-                '.th15-pill{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:8px 12px;min-width:56px;min-height:34px;cursor:pointer;outline:none;border:1px solid var(--th15-bd);color:var(--th15-fg);' +
-                'background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,.35)) ;' +
-                'box-shadow:0 6px 24px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.35);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);}' +
-                '.th15-pill:hover{transform:translateY(-1px)}' +
-                '.th15-ico{width:16px;height:16px;color:var(--th15-accent)}' +
-                '.th15-panel{position:absolute;left:68px;top:0;display:none;flex-direction:column;gap:10px;padding:12px;border-radius:14px;border:1px solid var(--th15-bd);' +
-                'background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.45));color:var(--th15-fg);box-shadow:0 16px 36px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.35);' +
-                'backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);min-width:260px;transform-origin:left top;animation:th15-fade .16s ease-out}' +
-                '@keyframes th15-fade{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}' +
+                '.th15-root{position:fixed;top:50%;left:16px;transform:translateY(-50%);z-index:2147483647;font:14px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen,Ubuntu,sans-serif;-webkit-user-select:none;user-select:none;transition:all .3s cubic-bezier(.4,0,.2,1)}' +
+                '.th15-pill{display:flex;align-items:center;justify-content:center;gap:10px;border-radius:20px;padding:12px 16px;min-width:80px;min-height:48px;cursor:pointer;border:none;color:var(--th15-fg);' +
+                'background:linear-gradient(135deg,var(--th15-grad1) 0%,var(--th15-grad2) 100%);' +
+                'box-shadow:0 8px 32px rgba(99,102,241,.25),0 2px 8px rgba(0,0,0,.1),inset 0 1px 0 rgba(255,255,255,.2);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);' +
+                'transition:all .25s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}' +
+                '.th15-pill::before{content:"";position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent,rgba(255,255,255,.1),transparent);transition:all .5s;opacity:0}' +
+                '.th15-pill:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 12px 48px rgba(99,102,241,.35),0 4px 12px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.3)}' +
+                '.th15-pill:hover::before{opacity:1;left:100%}' +
+                '.th15-pill:active{transform:translateY(0) scale(.98)}' +
+                '.th15-ico{width:20px;height:20px;color:currentColor;filter:drop-shadow(0 2px 4px rgba(0,0,0,.1))}' +
+                '.th15-badge{font-weight:700;font-size:15px;letter-spacing:.5px}' +
+                '.th15-panel{position:absolute;left:100px;top:50%;transform:translateY(-50%);display:none;flex-direction:column;gap:14px;padding:20px;border-radius:24px;border:1px solid var(--th15-bd);' +
+                'background:linear-gradient(135deg,var(--th15-panelGrad1) 0%,var(--th15-panelGrad2) 100%);color:var(--th15-fg);' +
+                'box-shadow:0 20px 60px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.15);' +
+                'backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);min-width:320px;animation:th15-slideIn .3s cubic-bezier(.4,0,.2,1)}' +
+                '@keyframes th15-slideIn{from{opacity:0;transform:translateY(-50%) translateX(-20px)}to{opacity:1;transform:translateY(-50%) translateX(0)}}' +
                 '.th15-root.th15-open .th15-panel{display:flex}' +
-                '.th15-row{display:flex;gap:8px;align-items:center;justify-content:space-between}' +
-                '.th15-btn{appearance:none;-webkit-appearance:none;border:1px solid var(--th15-bd);background:linear-gradient(180deg,var(--th15-btnTop),var(--th15-btnBot));color:var(--th15-fg);border-radius:10px;padding:6px 12px;min-width:44px;min-height:34px;cursor:pointer;transition:transform .08s ease, box-shadow .12s ease}' +
-                '.th15-btn:hover{box-shadow:0 6px 18px rgba(0,0,0,.15)}.th15-btn:active{transform:translateY(1px)}' +
-                '.th15-btn--icon{min-width:36px;min-height:34px;display:flex;align-items:center;justify-content:center}' +
-                '.th15-readout{font-size:18px;font-weight:800;min-width:72px;text-align:center;color:var(--th15-accent)}' +
-                '.th15-input{flex:1;border:1px solid var(--th15-bd);border-radius:10px;padding:8px 10px;background:transparent;color:var(--th15-fg)}' +
-                '.th15-input:focus{outline:2px solid var(--th15-focus);outline-offset:2px}' +
-                '.th15-meta{display:flex;gap:10px;align-items:center;justify-content:space-between}' +
-                '.th15-toggle{display:flex;gap:8px;align-items:center}' +
-                '.th15-small{font-size:12px;opacity:.85}' +
-                '.th15-badge{font-weight:800}' +
-                '.th15-warning{position:fixed;bottom:12px;left:12px;z-index:2147483647;padding:8px 12px;border-radius:12px;border:1px solid var(--th15-bd);' +
-                'background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.6));color:var(--th15-fg);box-shadow:0 8px 28px rgba(0,0,0,.18);backdrop-filter:blur(10px)}' +
-                '.th15-iframe-hint{position:absolute;right:6px;top:6px;font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid var(--th15-bd);background:rgba(0,0,0,.5);color:#fff;opacity:.95;pointer-events:none}' +
-                ':root{--th15-bg:#ffffff;--th15-fg:#0b1220;--th15-bd:#d0d7de;--th15-focus:#2563eb;--th15-accent:#4f46e5;--th15-btnTop:#fdfefe;--th15-btnBot:#eef2f7}' +
-                '@media (prefers-color-scheme: dark){:root{--th15-bg:#0b0f14;--th15-fg:#e6edf3;--th15-bd:#2e3743;--th15-focus:#4f46e5;--th15-accent:#8b7cf7;--th15-btnTop:#1a2230;--th15-btnBot:#121826}}' +
-                '.th15-root[data-theme="light"]{--th15-bg:#ffffff;--th15-fg:#0b1220;--th15-bd:#d0d7de;--th15-focus:#2563eb;--th15-accent:#4f46e5;--th15-btnTop:#fdfefe;--th15-btnBot:#eef2f7}' +
-                '.th15-root[data-theme="dark"]{--th15-bg:#0b0f14;--th15-fg:#e6edf3;--th15-bd:#2e3743;--th15-focus:#4f46e5;--th15-accent:#8b7cf7;--th15-btnTop:#1a2230;--th15-btnBot:#121826}';
+                '.th15-row{display:flex;gap:10px;align-items:center;justify-content:space-between}' +
+                '.th15-btn{appearance:none;-webkit-appearance:none;border:1px solid var(--th15-btnBd);background:var(--th15-btnBg);color:var(--th15-fg);border-radius:14px;padding:10px 16px;min-width:52px;min-height:44px;cursor:pointer;' +
+                'font-weight:600;font-size:14px;transition:all .2s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}' +
+                '.th15-btn::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.2),transparent);opacity:0;transition:opacity .2s}' +
+                '.th15-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px var(--th15-btnShadow);border-color:var(--th15-accent)}' +
+                '.th15-btn:hover::after{opacity:1}' +
+                '.th15-btn:active{transform:translateY(0) scale(.96)}' +
+                '.th15-btn--icon{min-width:44px;padding:10px;display:flex;align-items:center;justify-content:center}' +
+                '.th15-readout{font-size:28px;font-weight:800;min-width:100px;text-align:center;background:linear-gradient(135deg,var(--th15-accent),var(--th15-accentAlt));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 2px 8px rgba(99,102,241,.3))}' +
+                '.th15-input{flex:1;border:2px solid var(--th15-inputBd);border-radius:14px;padding:12px 14px;background:var(--th15-inputBg);color:var(--th15-fg);font-size:14px;font-weight:500;transition:all .2s}' +
+                '.th15-input:focus{outline:none;border-color:var(--th15-accent);box-shadow:0 0 0 4px var(--th15-focusRing)}' +
+                '.th15-input::placeholder{color:var(--th15-placeholder)}' +
+                '.th15-meta{display:flex;gap:12px;padding-top:8px;border-top:1px solid var(--th15-divider);flex-wrap:wrap}' +
+                '.th15-toggle{display:flex;gap:10px;align-items:center;flex-wrap:wrap}' +
+                '.th15-small{font-size:13px;font-weight:500;opacity:.9;cursor:pointer;transition:opacity .2s}' +
+                '.th15-small:hover{opacity:1}' +
+                'input[type="checkbox"]{width:18px;height:18px;cursor:pointer;accent-color:var(--th15-accent)}' +
+                'select.th15-theme{border:1px solid var(--th15-bd);border-radius:10px;padding:6px 10px;background:var(--th15-btnBg);color:var(--th15-fg);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}' +
+                'select.th15-theme:hover{border-color:var(--th15-accent)}' +
+                '.th15-warning{position:fixed;bottom:20px;left:20px;z-index:2147483646;padding:12px 18px;border-radius:16px;border:1px solid rgba(239,68,68,.3);' +
+                'background:linear-gradient(135deg,rgba(239,68,68,.95),rgba(220,38,38,.95));color:#fff;font-weight:600;box-shadow:0 12px 40px rgba(239,68,68,.4);backdrop-filter:blur(12px);cursor:pointer;transition:all .25s;animation:th15-fadeIn .3s}' +
+                '.th15-warning:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(239,68,68,.5)}' +
+                '@keyframes th15-fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}' +
+                '.th15-iframe-hint{position:absolute;right:8px;top:8px;font-size:11px;font-weight:600;padding:6px 12px;border-radius:12px;border:1px solid rgba(0,0,0,.2);background:rgba(0,0,0,.75);color:#fff;opacity:.9;pointer-events:none;backdrop-filter:blur(8px)}' +
+'.th15-presets{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--th15-divider)}' +
+'.th15-preset-btn{appearance:none;border:1px solid var(--th15-btnBd);background:var(--th15-btnBg);color:var(--th15-fg);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13px;transition:all .2s cubic-bezier(.4,0,.2,1);flex:1;min-width:60px}' +
+'.th15-preset-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px var(--th15-btnShadow);border-color:var(--th15-accent)}' +
+'.th15-preset-btn:active{transform:translateY(0) scale(.96)}' +
+'.th15-history{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:1px solid var(--th15-divider)}' +
+'.th15-history-title{font-size:13px;font-weight:700;opacity:.8;display:flex;align-items:center;gap:6px}' +
+'.th15-history-list{display:flex;gap:6px;flex-wrap:wrap}' +
+'.th15-history-item{appearance:none;border:1px solid var(--th15-btnBd);background:var(--th15-btnBg);color:var(--th15-fg);border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:500;font-size:12px;transition:all .2s}' +
+'.th15-history-item:hover{background:var(--th15-accent);color:#fff;border-color:var(--th15-accent);transform:scale(1.05)}' +
+'.th15-history-empty{font-size:12px;opacity:.5;font-style:italic}' +
+'.th15-notification{position:fixed;top:20px;right:20px;z-index:2147483647;padding:14px 20px;border-radius:16px;border:1px solid var(--th15-accent);' +
+'background:linear-gradient(135deg,var(--th15-accent),var(--th15-accentAlt));color:#fff;font-weight:600;font-size:14px;box-shadow:0 12px 40px rgba(99,102,241,.4);backdrop-filter:blur(12px);' +
+'animation:th15-notifSlide .3s cubic-bezier(.4,0,.2,1);pointer-events:none}' +
+'.th15-notification--hide{opacity:0;transform:translateX(20px);transition:all .3s}' +
+'@keyframes th15-notifSlide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}' +
+'.th15-advanced{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--th15-divider);flex-wrap:wrap;align-items:center}' +
+'.th15-btn--small{font-size:12px;padding:6px 12px;min-width:auto;min-height:36px}' +
+'.th15-root.th15-compact .th15-panel{min-width:260px;padding:16px;gap:10px}' +
+'.th15-root.th15-compact .th15-readout{font-size:24px}' +
+'.th15-root.th15-compact .th15-btn{padding:8px 12px;min-height:38px;font-size:13px}' +
+'.th15-root.th15-compact .th15-presets,.th15-root.th15-compact .th15-history,.th15-root.th15-compact .th15-advanced{display:none}' +
+                ':root{' +
+                '--th15-fg:#0f172a;--th15-bg:#ffffff;--th15-bd:rgba(148,163,184,.3);--th15-divider:rgba(148,163,184,.2);' +
+                '--th15-accent:#6366f1;--th15-accentAlt:#8b5cf6;--th15-focus:#6366f1;--th15-focusRing:rgba(99,102,241,.15);' +
+                '--th15-grad1:rgba(255,255,255,.85);--th15-grad2:rgba(241,245,249,.75);' +
+                '--th15-panelGrad1:rgba(255,255,255,.9);--th15-panelGrad2:rgba(248,250,252,.85);' +
+                '--th15-btnBg:rgba(241,245,249,.6);--th15-btnBd:rgba(203,213,225,.4);--th15-btnShadow:rgba(99,102,241,.15);' +
+                '--th15-inputBg:rgba(255,255,255,.5);--th15-inputBd:rgba(203,213,225,.5);--th15-placeholder:rgba(100,116,139,.5)' +
+                '}' +
+                '@media (prefers-color-scheme: dark){:root{' +
+                '--th15-fg:#f1f5f9;--th15-bg:#0f172a;--th15-bd:rgba(71,85,105,.4);--th15-divider:rgba(71,85,105,.3);' +
+                '--th15-accent:#818cf8;--th15-accentAlt:#a78bfa;--th15-focus:#818cf8;--th15-focusRing:rgba(129,140,248,.2);' +
+                '--th15-grad1:rgba(30,41,59,.9);--th15-grad2:rgba(15,23,42,.85);' +
+                '--th15-panelGrad1:rgba(30,41,59,.95);--th15-panelGrad2:rgba(15,23,42,.9);' +
+                '--th15-btnBg:rgba(51,65,85,.5);--th15-btnBd:rgba(71,85,105,.5);--th15-btnShadow:rgba(129,140,248,.2);' +
+                '--th15-inputBg:rgba(30,41,59,.6);--th15-inputBd:rgba(71,85,105,.6);--th15-placeholder:rgba(148,163,184,.4)' +
+                '}}' +
+                '.th15-root[data-theme="light"]{' +
+                '--th15-fg:#0f172a;--th15-bg:#ffffff;--th15-bd:rgba(148,163,184,.3);--th15-divider:rgba(148,163,184,.2);' +
+                '--th15-accent:#6366f1;--th15-accentAlt:#8b5cf6;--th15-grad1:rgba(255,255,255,.85);--th15-grad2:rgba(241,245,249,.75);' +
+                '--th15-panelGrad1:rgba(255,255,255,.9);--th15-panelGrad2:rgba(248,250,252,.85);' +
+                '--th15-btnBg:rgba(241,245,249,.6);--th15-btnBd:rgba(203,213,225,.4);--th15-btnShadow:rgba(99,102,241,.15);' +
+                '--th15-inputBg:rgba(255,255,255,.5);--th15-inputBd:rgba(203,213,225,.5)' +
+                '}' +
+                '.th15-root[data-theme="dark"]{' +
+                '--th15-fg:#f1f5f9;--th15-bg:#0f172a;--th15-bd:rgba(71,85,105,.4);--th15-divider:rgba(71,85,105,.3);' +
+                '--th15-accent:#818cf8;--th15-accentAlt:#a78bfa;--th15-grad1:rgba(30,41,59,.9);--th15-grad2:rgba(15,23,42,.85);' +
+                '--th15-panelGrad1:rgba(30,41,59,.95);--th15-panelGrad2:rgba(15,23,42,.9);' +
+                '--th15-btnBg:rgba(51,65,85,.5);--th15-btnBd:rgba(71,85,105,.5);--th15-btnShadow:rgba(129,140,248,.2);' +
+                '--th15-inputBg:rgba(30,41,59,.6);--th15-inputBd:rgba(71,85,105,.6)' +
+                '}';
 
                 var styleEl = document.createElement('style');
                 styleEl.setAttribute('type','text/css');
@@ -148,6 +226,8 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                 root.setAttribute('role','region');
                 root.setAttribute('aria-label','TimerHooker 1.5.0 — Press to adjust playback & timers');
                 root.dataset.theme = settings.theme || 'system';
+                // Force visibility for strict sites like GitHub
+                root.style.cssText += 'position:fixed!important;z-index:2147483647!important;pointer-events:auto!important;visibility:visible!important;opacity:1!important;';
 
                 var pill = document.createElement('button');
                 pill.className = 'th15-pill';
@@ -184,19 +264,48 @@ if (document.readyState === "interactive" || document.readyState === "complete")
 
                 var rowMid = document.createElement('div');
                 rowMid.className = 'th15-row';
-                var btnMul = document.createElement('button'); btnMul.className = 'th15-btn th15-mul'; btnMul.textContent = '+2'; btnMul.setAttribute('aria-label','Multiply by 2');
-                var btnDiv = document.createElement('button'); btnDiv.className = 'th15-btn th15-div'; btnDiv.textContent = '-2'; btnDiv.setAttribute('aria-label','Divide by 2');
+                var btnMul = document.createElement('button'); btnMul.className = 'th15-btn th15-mul'; btnMul.textContent = '×2'; btnMul.setAttribute('aria-label','Multiply by 2');
+                var btnDiv = document.createElement('button'); btnDiv.className = 'th15-btn th15-div'; btnDiv.textContent = '÷2'; btnDiv.setAttribute('aria-label','Divide by 2');
                 var btnReset = document.createElement('button'); btnReset.className = 'th15-btn th15-reset'; btnReset.setAttribute('aria-label','Reset to normal speed'); btnReset.title='Reset to normal speed';
                 var rsI = document.createElementNS(svgNS,'svg'); rsI.setAttribute('viewBox','0 0 24 24'); rsI.setAttribute('width','16'); rsI.setAttribute('height','16');
                 var rsP = document.createElementNS(svgNS,'path'); rsP.setAttribute('d','M3 12a9 9 0 1 0 3-6.7M3 4v4h4'); rsP.setAttribute('stroke','currentColor'); rsP.setAttribute('stroke-width','2'); rsP.setAttribute('fill','none'); rsP.setAttribute('stroke-linecap','round'); rsP.setAttribute('stroke-linejoin','round');
                 rsI.appendChild(rsP); btnReset.appendChild(rsI);
-                rowMid.appendChild(btnMul); rowMid.appendChild(btnDiv); rowMid.appendChild(btnReset);
+                
+                var btnToggle = document.createElement('button'); btnToggle.className = 'th15-btn th15-toggle-speed'; btnToggle.setAttribute('aria-label','Toggle between current and 1×'); btnToggle.title='Quick toggle: Last ↔ 1×';
+                var tgI = document.createElementNS(svgNS,'svg'); tgI.setAttribute('viewBox','0 0 24 24'); tgI.setAttribute('width','16'); tgI.setAttribute('height','16');
+                var tgP = document.createElementNS(svgNS,'path'); tgP.setAttribute('d','M17 2l4 4-4 4M7 22l-4-4 4-4M21 6H3M3 18h18'); tgP.setAttribute('stroke','currentColor'); tgP.setAttribute('stroke-width','2'); tgP.setAttribute('fill','none'); tgP.setAttribute('stroke-linecap','round'); tgP.setAttribute('stroke-linejoin','round');
+                tgI.appendChild(tgP); btnToggle.appendChild(tgI);
+                
+                rowMid.appendChild(btnMul); rowMid.appendChild(btnDiv); rowMid.appendChild(btnReset); rowMid.appendChild(btnToggle);
 
                 var rowInput = document.createElement('div');
                 rowInput.className = 'th15-row';
                 var input = document.createElement('input'); input.className = 'th15-input th15-exact'; input.type = 'number'; input.min = '0.0625'; input.max = '16'; input.step = '0.05'; input.inputMode = 'decimal'; input.placeholder = 'Set exact (e.g., 2.5)'; input.setAttribute('aria-label','Set exact multiplier');
                 var btnSet = document.createElement('button'); btnSet.className = 'th15-btn th15-set'; btnSet.textContent = 'Set';
                 rowInput.appendChild(input); rowInput.appendChild(btnSet);
+
+                // Presets row
+                var rowPresets = document.createElement('div');
+                rowPresets.className = 'th15-presets';
+                settings.presets.forEach(function(preset){
+                    var btn = document.createElement('button');
+                    btn.className = 'th15-preset-btn';
+                    btn.textContent = preset.name;
+                    btn.title = 'Set speed to ' + preset.name;
+                    btn.dataset.value = preset.value;
+                    rowPresets.appendChild(btn);
+                });
+
+                // History section
+                var historySection = document.createElement('div');
+                historySection.className = 'th15-history';
+                var historyTitle = document.createElement('div');
+                historyTitle.className = 'th15-history-title';
+                historyTitle.textContent = '📜 Recent:';
+                historySection.appendChild(historyTitle);
+                var historyList = document.createElement('div');
+                historyList.className = 'th15-history-list';
+                historySection.appendChild(historyList);
 
                 var rowMeta = document.createElement('div');
                 rowMeta.className = 'th15-meta';
@@ -216,13 +325,47 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                 var excludeLbl = document.createElement('label'); excludeLbl.htmlFor='th15-exclude'; excludeLbl.className='th15-small'; excludeLbl.textContent='Exclude site';
                 rightToggles.appendChild(themeSel); rightToggles.appendChild(exclude); rightToggles.appendChild(excludeLbl);
 
+                // Advanced controls row
+                var rowAdvanced = document.createElement('div');
+                rowAdvanced.className = 'th15-advanced';
+                var btnExport = document.createElement('button'); btnExport.className = 'th15-btn th15-btn--small'; btnExport.textContent = '📤 Export'; btnExport.title = 'Export settings to clipboard';
+                var btnImport = document.createElement('button'); btnImport.className = 'th15-btn th15-btn--small'; btnImport.textContent = '📥 Import'; btnImport.title = 'Import settings from clipboard';
+                var btnClearHistory = document.createElement('button'); btnClearHistory.className = 'th15-btn th15-btn--small'; btnClearHistory.textContent = '🗑️ Clear History'; btnClearHistory.title = 'Clear speed history';
+                var compactToggle = document.createElement('input'); compactToggle.type='checkbox'; compactToggle.className='th15-compact'; compactToggle.checked=!!settings.compactMode; compactToggle.id='th15-compact';
+                var compactLbl = document.createElement('label'); compactLbl.htmlFor='th15-compact'; compactLbl.className='th15-small'; compactLbl.textContent='Compact';
+                rowAdvanced.appendChild(btnExport); rowAdvanced.appendChild(btnImport); rowAdvanced.appendChild(btnClearHistory);
+                rowAdvanced.appendChild(compactToggle); rowAdvanced.appendChild(compactLbl);
+
                 rowMeta.appendChild(leftToggles); rowMeta.appendChild(rightToggles);
 
-                panel.appendChild(rowTop); panel.appendChild(rowMid); panel.appendChild(rowInput); panel.appendChild(rowMeta);
+                panel.appendChild(rowTop); panel.appendChild(rowMid); panel.appendChild(rowInput); panel.appendChild(rowPresets); panel.appendChild(historySection); panel.appendChild(rowMeta); panel.appendChild(rowAdvanced);
                 root.appendChild(pill); root.appendChild(panel);
 
                 var mount = function(){
-                    try { document.body.appendChild(root); } catch(e) {}
+                    try { 
+                        if (!document.body) {
+                            setTimeout(mount, 100);
+                            return;
+                        }
+                        if (!document.body.contains(root)) {
+                            document.body.appendChild(root);
+                            console.log('[TimerHooker] UI element appended to body'); 
+                        }
+                    } catch(e) {
+                        console.warn('[TimerHooker] Mount error:', e);
+                        // Try alternate mount points for strict sites
+                        try {
+                            var container = document.documentElement || document.querySelector('html');
+                            if (container && !container.contains(root)) {
+                                container.appendChild(root);
+                                console.log('[TimerHooker] UI mounted to documentElement');
+                            }
+                        } catch(e2) {
+                            console.error('[TimerHooker] All mount attempts failed:', e2);
+                            setTimeout(mount, 500);
+                            return;
+                        }
+                    }
                     if (!(settings.pinned)) { root.style.position='absolute'; root.style.top='auto'; root.style.left='12px'; root.style.bottom='12px'; }
                     // restore saved position if present
                     try {
@@ -231,6 +374,19 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                             root.style.left = settings.pos.left + 'px';
                         }
                     } catch(e) {}
+                    
+                    // Watch for removal (SPA navigation like GitHub)
+                    if (window.MutationObserver) {
+                        var observer = new MutationObserver(function() {
+                            if (!document.body.contains(root) && document.body) {
+                                try {
+                                    document.body.appendChild(root);
+                                    console.log('[TimerHooker] UI re-mounted after removal');
+                                } catch(e) {}
+                            }
+                        });
+                        observer.observe(document.body, { childList: true, subtree: true });
+                    }
                 };
 
                 // interactions
@@ -243,12 +399,51 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                     if (ev.shiftKey) return; // reserved for dragging
                     setExpanded(!root.classList.contains('th15-open'));
                 });
-                btnInc.addEventListener('click', function(){ changeTime(1,0,true); });
-                btnDec.addEventListener('click', function(){ changeTime(-1,0,true); });
-                btnMul.addEventListener('click', function(){ changeTime(0,2); });
-                btnDiv.addEventListener('click', function(){ changeTime(0,-2); });
-                btnReset.addEventListener('click', function(){ changeTime(0,0,false,true); });
-                btnSet.addEventListener('click', function(){ var v=parseFloat(input.value); if(isFinite(v)&&v>0){ timerContext.change(1/ v); } });
+                btnInc.addEventListener('click', function(){ changeTime(1,0,true); addToHistory(currentMultiplier); });
+                btnDec.addEventListener('click', function(){ changeTime(-1,0,true); addToHistory(currentMultiplier); });
+                btnMul.addEventListener('click', function(){ changeTime(0,2); addToHistory(currentMultiplier); });
+                btnDiv.addEventListener('click', function(){ changeTime(0,-2); addToHistory(currentMultiplier); });
+                btnReset.addEventListener('click', function(){ changeTime(0,0,false,true); addToHistory(1); });
+                btnToggle.addEventListener('click', function(){
+                    var current = timerContext.rate || 1;
+                    if (Math.abs(current - 1) < 0.01) {
+                        // Currently at 1×, restore last speed
+                        if (settings.lastSpeed && settings.lastSpeed !== 1) {
+                            timerContext.change(1/settings.lastSpeed);
+                            showNotification('↻ Restored: ' + settings.lastSpeed.toFixed(2) + '×');
+                        }
+                    } else {
+                        // Save current as last and go to 1×
+                        settings.lastSpeed = current;
+                        ns.saveSettings(settings);
+                        timerContext.change(1);
+                        showNotification('↻ Normal speed (1×)');
+                    }
+                });
+                btnSet.addEventListener('click', function(){ var v=parseFloat(input.value); if(isFinite(v)&&v>0){ timerContext.change(1/v); addToHistory(v); } });
+
+                // Preset buttons
+                rowPresets.querySelectorAll('.th15-preset-btn').forEach(function(btn){
+                    btn.addEventListener('click', function(){
+                        var val = parseFloat(btn.dataset.value);
+                        if (isFinite(val) && val > 0) {
+                            timerContext.change(val);
+                            addToHistory(1/val);
+                            showNotification('Speed set to ' + btn.textContent);
+                        }
+                    });
+                });
+
+                // History list click
+                historyList.addEventListener('click', function(ev){
+                    if (ev.target.classList.contains('th15-history-item')) {
+                        var val = parseFloat(ev.target.dataset.value);
+                        if (isFinite(val) && val > 0) {
+                            timerContext.change(1/val);
+                            showNotification('Restored speed: ' + val.toFixed(2) + '×');
+                        }
+                    }
+                });
 
                 pin.addEventListener('change', function(){ settings.pinned = !!pin.checked; ns.saveSettings(settings); mount(); });
                 sync.addEventListener('change', function(){ settings.syncAcrossTabs = !!sync.checked; ns.saveSettings(settings); });
@@ -256,9 +451,164 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                 themeSel.addEventListener('change', function(){ settings.theme = themeSel.value; ns.saveSettings(settings); root.dataset.theme = settings.theme; });
                 exclude.addEventListener('change', function(){ settings.excluded = !!exclude.checked; ns.saveSettings(settings); if (settings.excluded) { setExpanded(false); }});
 
+                // Advanced controls
+                btnExport.addEventListener('click', function(){
+                    try {
+                        var data = JSON.stringify(settings, null, 2);
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(data).then(function(){
+                                showNotification('✅ Settings exported to clipboard');
+                            }).catch(function(){ showNotification('❌ Export failed'); });
+                        } else {
+                            prompt('Copy these settings:', data);
+                        }
+                    } catch(e) { showNotification('❌ Export error'); }
+                });
+
+                btnImport.addEventListener('click', function(){
+                    try {
+                        if (navigator.clipboard && navigator.clipboard.readText) {
+                            navigator.clipboard.readText().then(function(text){
+                                try {
+                                    var imported = JSON.parse(text);
+                                    Object.keys(imported).forEach(function(k){ settings[k] = imported[k]; });
+                                    ns.saveSettings(settings);
+                                    showNotification('✅ Settings imported successfully');
+                                    location.reload();
+                                } catch(e) { showNotification('❌ Invalid settings format'); }
+                            }).catch(function(){ 
+                                var text = prompt('Paste settings JSON:');
+                                if (text) {
+                                    try {
+                                        var imported = JSON.parse(text);
+                                        Object.keys(imported).forEach(function(k){ settings[k] = imported[k]; });
+                                        ns.saveSettings(settings);
+                                        showNotification('✅ Settings imported');
+                                        location.reload();
+                                    } catch(e) { showNotification('❌ Invalid format'); }
+                                }
+                            });
+                        } else {
+                            var text = prompt('Paste settings JSON:');
+                            if (text) {
+                                try {
+                                    var imported = JSON.parse(text);
+                                    Object.keys(imported).forEach(function(k){ settings[k] = imported[k]; });
+                                    ns.saveSettings(settings);
+                                    showNotification('✅ Settings imported');
+                                    location.reload();
+                                } catch(e) { showNotification('❌ Invalid format'); }
+                            }
+                        }
+                    } catch(e) { showNotification('❌ Import error'); }
+                });
+
+                btnClearHistory.addEventListener('click', function(){
+                    if (confirm('Clear all speed history?')) {
+                        settings.history = [];
+                        ns.saveSettings(settings);
+                        updateHistoryUI();
+                        showNotification('🗑️ History cleared');
+                    }
+                });
+
+                compactToggle.addEventListener('change', function(){
+                    settings.compactMode = !!compactToggle.checked;
+                    ns.saveSettings(settings);
+                    if (settings.compactMode) {
+                        root.classList.add('th15-compact');
+                    } else {
+                        root.classList.remove('th15-compact');
+                    }
+                    showNotification(settings.compactMode ? '📦 Compact mode ON' : '📦 Compact mode OFF');
+                });
+
                 // collapse on outside click / Escape
                 document.addEventListener('mousedown', function(ev){ if (!root.contains(ev.target)) setExpanded(false); });
                 document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') setExpanded(false); });
+
+                // History management
+                var currentMultiplier = 1;
+                var addToHistory = function(multiplier) {
+                    if (!settings.history) settings.history = [];
+                    // Remove duplicates
+                    settings.history = settings.history.filter(function(item){ return item !== multiplier; });
+                    // Add to front
+                    settings.history.unshift(multiplier);
+                    // Limit size
+                    if (settings.history.length > settings.maxHistory) {
+                        settings.history = settings.history.slice(0, settings.maxHistory);
+                    }
+                    ns.saveSettings(settings);
+                    updateHistoryUI();
+                };
+
+                var updateHistoryUI = function() {
+                    // Clear using safe method (Trusted Types compatible)
+                    while (historyList.firstChild) {
+                        historyList.removeChild(historyList.firstChild);
+                    }
+                    
+                    if (!settings.history || settings.history.length === 0) {
+                        var empty = document.createElement('div');
+                        empty.className = 'th15-history-empty';
+                        empty.textContent = 'No recent speeds';
+                        historyList.appendChild(empty);
+                        return;
+                    }
+                    
+                    settings.history.forEach(function(val){
+                        var item = document.createElement('button');
+                        item.className = 'th15-history-item';
+                        item.textContent = val.toFixed(2) + '×';
+                        item.dataset.value = val;
+                        item.title = 'Click to restore ' + val.toFixed(2) + '× speed';
+                        historyList.appendChild(item);
+                    });
+                };
+
+                // Notification system
+                var notificationTimeout;
+                var showNotification = function(message) {
+                    if (!settings.showNotifications) return;
+                    try {
+                        var existing = document.querySelector('.th15-notification');
+                        if (existing) existing.remove();
+                        
+                        var notif = document.createElement('div');
+                        notif.className = 'th15-notification';
+                        notif.textContent = message;
+                        if (document.body) {
+                            document.body.appendChild(notif);
+                        } else {
+                            return;
+                        }
+                        
+                        clearTimeout(notificationTimeout);
+                        notificationTimeout = setTimeout(function(){
+                            try {
+                                notif.classList.add('th15-notification--hide');
+                                setTimeout(function(){ 
+                                    try { notif.remove(); } catch(e) {}
+                                }, 300);
+                            } catch(e) {}
+                        }, 2000);
+                    } catch(e) {
+                        console.warn('[TimerHooker] Notification error:', e);
+                    }
+                };
+
+                // Initialize history UI (safe)
+                try {
+                    updateHistoryUI();
+                } catch(e) {
+                    console.warn('[TimerHooker] History UI init error:', e);
+                }
+
+                // Initialize compact mode
+                if (settings.compactMode) {
+                    root.classList.add('th15-compact');
+                }
 
                 // drag to move (Shift + drag the pill)
                 var dragging = false, sx = 0, sy = 0, st = 0, sl = 0;
@@ -266,34 +616,59 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                 var onUp = function(){ if(!dragging) return; dragging=false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); try { settings.pos = { top: parseInt(root.style.top||'0')||0, left: parseInt(root.style.left||'0')||0 }; ns.saveSettings(settings);} catch(e) {} };
                 pill.addEventListener('mousedown', function(ev){ if(!ev.shiftKey) return; ev.preventDefault(); setExpanded(false); dragging=true; sx = ev.clientX; sy = ev.clientY; st = parseInt((root.style.top||'').replace('px',''))||root.getBoundingClientRect().top; sl = parseInt((root.style.left||'').replace('px',''))||root.getBoundingClientRect().left; document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); });
 
+                // Robust mounting with retries
+                var mountAttempts = 0;
+                var maxAttempts = 10;
+                var tryMount = function() {
+                    mountAttempts++;
+                    console.log('[TimerHooker] Mount attempt', mountAttempts, '- body exists:', !!document.body, '- readyState:', document.readyState);
+                    try {
+                        if (document.body) {
+                            mount();
+                            global.isDOMRendered = true;
+                            console.log('[TimerHooker] ✅ UI mounted successfully on', location.hostname);
+                            // Verify mount
+                            setTimeout(function(){
+                                if (document.body.contains(root) || (document.documentElement && document.documentElement.contains(root))) {
+                                    console.log('[TimerHooker] ✅ UI still present after 1s');
+                                } else {
+                                    console.warn('[TimerHooker] ⚠️ UI was removed! Trying to re-mount...');
+                                    mount();
+                                }
+                            }, 1000);
+                            return true;
+                        } else if (mountAttempts < maxAttempts) {
+                            console.log('[TimerHooker] Body not ready, retrying...');
+                            setTimeout(tryMount, 200);
+                            return false;
+                        } else {
+                            console.error('[TimerHooker] ❌ Failed to mount after', maxAttempts, 'attempts');
+                            return false;
+                        }
+                    } catch(err) {
+                        console.error('[TimerHooker] ❌ Mount attempt', mountAttempts, 'failed:', err);
+                        if (mountAttempts < maxAttempts) {
+                            setTimeout(tryMount, 500);
+                        }
+                        return false;
+                    }
+                };
+
                 if (!global.isDOMLoaded) {
                     document.addEventListener('readystatechange', function () {
                         if ((document.readyState === 'interactive' || document.readyState === 'complete') && !global.isDOMRendered) {
-                            mount();
-                            global.isDOMRendered = true;
-                            console.log('TimerHooker UI mounted');
+                            tryMount();
                         }
                     });
+                    // Also try immediately if already loaded
+                    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+                        tryMount();
+                    }
                 } else {
-                    mount();
-                    global.isDOMRendered = true;
-                    console.log('TimerHooker UI mounted');
+                    tryMount();
                 }
 
-                // CSP fallback notice if styles are blocked
-                try {
-                    var cs = getComputedStyle(pill);
-                    if (!cs || !cs.borderRadius) {
-                        throw new Error('style blocked');
-                    }
-                } catch(e) {
-                    var warn = document.createElement('div');
-                    warn.className='th15-warning';
-                    warn.textContent='Injection blocked by site (CSP / sandbox). Click to learn more.';
-                    warn.title='Injection blocked by site (CSP / sandbox). Click to learn more.';
-                    warn.addEventListener('click', function(){ window.open('https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP', '_blank'); });
-                    try { document.body.appendChild(warn); } catch(err) {}
-                }
+                // NO CSP warning - removed as per user request
             },
             applyGlobalAction: function (timer) {
                 // Method of clicking the semicircle button on the interface
@@ -539,6 +914,7 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                     decrease: parse((s.hotkeys && s.hotkeys.decrease) || 'Alt+Shift+ArrowDown'),
                     multiply: parse((s.hotkeys && s.hotkeys.multiply) || 'Ctrl+Alt+='),
                     divide: parse((s.hotkeys && s.hotkeys.divide) || 'Ctrl+Alt+-'),
+                    toggle: parse((s.hotkeys && s.hotkeys.toggle) || 'Ctrl+Alt+T'),
                     reset: parse((s.hotkeys && s.hotkeys.reset) || 'Ctrl+Alt+0'),
                     prompt: parse((s.hotkeys && s.hotkeys.prompt) || 'Ctrl+Alt+9')
                 };
@@ -559,6 +935,20 @@ if (document.readyState === "interactive" || document.readyState === "complete")
                         if (match(e, hk.multiply)) { e.preventDefault(); timer.changeTime(0, 2); return; }
                         if (match(e, hk.divide)) { e.preventDefault(); timer.changeTime(0, -2); return; }
                         if (match(e, hk.reset)) { e.preventDefault(); timer.changeTime(0, 0, false, true); return; }
+                        if (match(e, hk.toggle)) { 
+                            e.preventDefault(); 
+                            var current = timerContext.rate || 1;
+                            if (Math.abs(current - 1) < 0.01) {
+                                if (s.lastSpeed && s.lastSpeed !== 1) {
+                                    timerContext.change(1/s.lastSpeed);
+                                }
+                            } else {
+                                s.lastSpeed = current;
+                                ns.saveSettings(s);
+                                timerContext.change(1);
+                            }
+                            return;
+                        }
                     } catch(err) {}
                 };
                 addEventListener('keydown', timer._onKeydown, { passive: false });
